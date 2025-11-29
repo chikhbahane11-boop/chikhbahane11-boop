@@ -14,6 +14,10 @@ interface SourceReaderProps {
 const SourceReader: React.FC<SourceReaderProps> = ({ title, content, defaultExpanded = false }) => {
   const [isExpanded, setIsExpanded] = useState(defaultExpanded);
 
+  // Set to track which terms have already been highlighted in this render pass.
+  // This ensures a definition appears only once per document/lecture part.
+  const highlightedTerms = new Set<string>();
+
   // Function to parse text and wrap glossary terms
   const renderContentWithGlossary = (text: string) => {
     if (!text) return null;
@@ -34,15 +38,24 @@ const SourceReader: React.FC<SourceReaderProps> = ({ title, content, defaultExpa
           
           split.forEach((str, i) => {
             if (i % 2 === 1) { // It's a match
-               const isCommercial = termKey.includes('تجارية') || termKey.includes('تضامن') || termKey.includes('مساهمة');
-               
-               newParts.push(
-                <GlossaryTerm key={`${termKey}-${i}-${Math.random()}`} term={str} definition={GLOSSARY_TERMS[termKey].definition}>
-                  <span className={`cursor-pointer font-medium px-1 mx-0.5 rounded transition-colors duration-200 inline-block ${isCommercial ? 'text-blue-700 bg-blue-50/80 decoration-blue-300 underline underline-offset-4' : 'text-amber-800 bg-amber-50/50 border-b-2 border-amber-300/50 hover:bg-amber-200'}`}>
-                    {str}
-                  </span>
-                </GlossaryTerm>
-              );
+               // Check if we have already highlighted this term (by its key)
+               if (!highlightedTerms.has(termKey)) {
+                   // Mark as highlighted
+                   highlightedTerms.add(termKey);
+
+                   const isCommercial = termKey.includes('تجارية') || termKey.includes('تضامن') || termKey.includes('مساهمة');
+                   
+                   newParts.push(
+                    <GlossaryTerm key={`${termKey}-${i}-${Math.random()}`} term={str} definition={GLOSSARY_TERMS[termKey].definition}>
+                      <span className={`cursor-pointer font-medium px-1 mx-0.5 rounded transition-colors duration-200 inline-block ${isCommercial ? 'text-blue-700 bg-blue-50/80 decoration-blue-300 underline underline-offset-4' : 'text-amber-800 bg-amber-50/50 border-b-2 border-amber-300/50 hover:bg-amber-200'}`}>
+                        {str}
+                      </span>
+                    </GlossaryTerm>
+                  );
+               } else {
+                   // Already highlighted, return as plain text
+                   newParts.push(str);
+               }
             } else if (str) {
               newParts.push(str);
             }
